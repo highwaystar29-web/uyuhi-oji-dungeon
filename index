@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ウユヒ王子の洞窟探検 〜秘宝を求めて〜</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #0a0a12;
+    color: #e8dcb8;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    touch-action: none;
+  }
+  #game {
+    max-width: 420px;
+    margin: 0 auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    border-left: 3px solid #3a2f1e;
+    border-right: 3px solid #3a2f1e;
+  }
+  #hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 10px;
+    background: #14101c;
+    border-bottom: 1px solid #4a3a20;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  #hpWrap { display:flex; align-items:center; gap:6px; }
+  #hpBarBg {
+    width: 78px; height: 9px;
+    background: #2a1a1a;
+    border: 2px solid #6b4226;
+  }
+  #hpBarFill {
+    height: 100%;
+    background: linear-gradient(#e05050,#a02020);
+    width: 100%;
+  }
+  #floorLabel { color: #f4c430; font-weight: bold; }
+  #lvLabel { color: #9ad8f0; font-weight: bold; }
+  #invRow {
+    background: #1a1424;
+    border-bottom: 3px solid #4a3a20;
+    padding: 4px 10px;
+    font-size: 10.5px;
+    color: #d8c8a0;
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+  #invRow:active { background: #241a30; }
+  #xpBarBg { width:100%; height:4px; background:#241a10; margin-top:2px; }
+  #xpBarFill { height:100%; background:#f4c430; width:0%; }
+  canvas {
+    display: block;
+    width: 100%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background: #000;
+  }
+  #msgLog {
+    background: #14101c;
+    border-top: 3px solid #4a3a20;
+    padding: 4px 10px;
+    font-size: 11px;
+    min-height: 34px;
+    line-height: 1.4;
+    color: #b8a888;
+  }
+  #controls {
+    flex: 1;
+    background: #0e0b14;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    border-top: 3px solid #4a3a20;
+  }
+  #dpad {
+    position: relative;
+    width: 128px; height: 128px;
+  }
+  .dbtn {
+    position: absolute;
+    width: 42px; height: 42px;
+    background: #2a2438;
+    border: 2px solid #6b5a8a;
+    color: #e8dcb8;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 3px 0 #16121e;
+  }
+  .dbtn:active { transform: translateY(2px); box-shadow: none; }
+  #dUp { top: 0; left: 43px; }
+  #dDown { top: 86px; left: 43px; }
+  #dLeft { top: 43px; left: 0; }
+  #dRight { top: 43px; left: 86px; }
+  #dCenter { top: 43px; left: 43px; width:42px; height:42px; background:#1c1828; border:2px solid #4a3a5a; }
+  #abpad {
+    display: flex;
+    gap: 14px;
+    align-items: flex-end;
+  }
+  .abtn {
+    width: 58px; height: 58px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 18px;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+    border: 2px solid rgba(255,255,255,0.2);
+  }
+  .abtn:active { transform: translateY(3px); box-shadow: none; }
+  #btnB { background: #3a6b4a; color: #e8f4e0; margin-bottom: 20px; }
+  #btnA { background: #b5442d; color: #ffe8d8; }
+  .overlay {
+    position: absolute; inset: 0;
+    background: rgba(6,4,10,0.94);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 20px;
+    z-index: 10;
+  }
+  .titleMain {
+    color: #f4c430;
+    font-size: 26px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-shadow: 3px 3px 0 #7a3010, -1px -1px 0 #000;
+    line-height: 1.5;
+  }
+  .titleSub {
+    color: #d8c8a0;
+    font-size: 13px;
+    margin-top: 8px;
+    border-top: 2px solid #b5442d;
+    border-bottom: 2px solid #b5442d;
+    padding: 4px 14px;
+  }
+  .startBtn {
+    margin-top: 30px;
+    padding: 12px 28px;
+    background: #b5442d;
+    color: #ffe8d8;
+    border: 3px solid #f4c430;
+    font-size: 14px;
+    font-family: inherit;
+    letter-spacing: 2px;
+    cursor: pointer;
+    animation: blink 1.4s infinite;
+  }
+  @keyframes blink { 0%,49%{opacity:1;} 50%,100%{opacity:0.4;} }
+  .subText { font-size: 10px; color: #7a6a50; margin-top: 22px; line-height:1.7; }
+  .resultTitle { font-size: 20px; color: #f4c430; margin-bottom: 14px; }
+  .resultDesc { font-size: 12px; color: #d8c8a0; line-height: 1.7; margin-bottom: 20px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div id="game">
+
+  <div id="titleScreen" class="overlay">
+    <div class="titleMain">ウユヒ王子の<br>洞窟探検</div>
+    <div class="titleSub">〜秘宝を求めて〜</div>
+    <button class="startBtn" id="startBtn">▶ はじめから</button>
+    <div class="subText">十字キーで移動・向きを変更<br>Aボタンで正面を攻撃/その場で待機<br>Bボタンで所持アイテム使用<br>(画面上部のアイテム表示タップで切替)<br>全12階層・最下層に魔王が待つ</div>
+  </div>
+
+  <div id="gameOverScreen" class="overlay hidden">
+    <div class="resultTitle">やられてしまった…</div>
+    <div class="resultDesc" id="gameOverDesc">ウユヒ王子は洞窟の闇に倒れた。<br>しかし伝説はまた最初から語られる。</div>
+    <button class="startBtn" id="retryBtn">▶ はじめから</button>
+  </div>
+
+  <div id="winScreen" class="overlay hidden">
+    <div class="resultTitle">秘宝を手に入れた!</div>
+    <div class="resultDesc">ウユヒ王子は洞窟の魔王を打ち破り、<br>最深部で伝説の秘宝を見つけ出した。<br>王国に平和が戻るだろう。</div>
+    <button class="startBtn" id="winRetryBtn">▶ はじめから</button>
+  </div>
+
+  <div id="hud">
+    <div id="floorLabel">B1F</div>
+    <div id="lvLabel">Lv1</div>
+    <div id="hpWrap">
+      <span>HP</span>
+      <div id="hpBarBg"><div id="hpBarFill"></div></div>
+      <span id="hpText">20/20</span>
+    </div>
+  </div>
+  <div id="invRow">
+    <span id="invText">ポーション ×1(タップで切替)</span>
+    <span id="xpText">XP 0/12</span>
+  </div>
+
+  <canvas id="canvas" width="264" height="216"></canvas>
+
+  <div id="msgLog">洞窟に足を踏み入れた…</div>
+
+  <div id="controls">
+    <div id="dpad">
+      <div class="dbtn" id="dUp">▲</div>
+      <div class="dbtn" id="dLeft">◀</div>
+      <div id="dCenter"></div>
+      <div class="dbtn" id="dRight">▶</div>
+      <div class="dbtn" id="dDown">▼</div>
+    </div>
+    <div id="abpad">
+      <div class="abtn" id="btnB">B</div>
+      <div class="abtn" id="btnA">A</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- CONFIG ----------
+  const TILE = 24;
+  const VIEW_W = 11, VIEW_H = 9;
+  const MAP_W = 26, MAP_H = 20;
+  const MAX_FLOOR = 12;
+  const MOVE_SPEED = 5;
+
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  const COL = {
+    wallBase: '#3a3448', wallDark: '#241f30', wallLight: '#524a68',
+    floorBase: '#1c1a24', floorDot: '#2a2634',
+    stairs: '#8a8296', stairsLine: '#c8c2d8',
+    outline: '#100c18',
+    skin: '#f2c49b', skinShadow:'#d8a878', hair: '#241a14',
+    armor: '#2a5cc0', armorLight:'#4a7ce0', armorDark: '#173a80', cape: '#b5442d', capeDark:'#7a2c1a', crown: '#f4c430', crownDark:'#c89010',
+    sword: '#d8d8e0', swordEdge:'#f0f0f8', hilt:'#8a5a2a', shield:'#2a5cc0', shieldGem:'#f4c430',
+    slime: '#4caa4c', slimeDark: '#2c7a2c', slimeLight:'#7ad07a', slimeEye: '#102010',
+    bat: '#4a4670', batLight: '#6a64a0', batDark:'#302c50', batEye:'#e05050',
+    bone: '#e8e0d0', boneDark: '#a89e88', boneEye:'#c02020', spear:'#8a8296',
+    goblin:'#5a9040', goblinDark:'#3a6428', club:'#6b4226',
+    ghostBody:'#dceefa', ghostDark:'#a8c8e0', ghostEye:'#3050a0',
+    ogre:'#8a6a4a', ogreDark:'#5c4630', tusks:'#f0ead8',
+    bossBody:'#5a2a6a', bossDark:'#3a1848', bossHorn:'#e0d8c8', bossEye:'#ff3030',
+    potion: '#3a7fd5', potionGlass:'#bcd8f0',
+    scroll:'#d8b878', scrollBand:'#b5442d',
+    itemSword:'#d8d8e0', itemShield:'#8a5a2a',
+    chest: '#8a5a2a', chestGold: '#f4c430'
+  };
+
+  const DIRS = { down:[0,1], up:[0,-1], left:[-1,0], right:[1,0] };
+
+  const TYPES = {
+    slime:   {hp:5,  atk:2, def:0, xp:3,   minFloor:1},
+    bat:     {hp:4,  atk:2, def:0, xp:4,   minFloor:2},
+    skeleton:{hp:9,  atk:3, def:1, xp:6,   minFloor:3},
+    goblin:  {hp:13, atk:4, def:1, xp:9,   minFloor:5},
+    ghost:   {hp:10, atk:5, def:0, xp:11,  minFloor:7},
+    ogre:    {hp:26, atk:6, def:2, xp:16,  minFloor:9},
+    boss:    {hp:80, atk:9, def:3, xp:150, minFloor:99}
+  };
+
+  const WEAPONS = [
+    {name:'木の剣',      atk:2,  minFloor:1},
+    {name:'銅の剣',      atk:4,  minFloor:2},
+    {name:'鉄の剣',      atk:7,  minFloor:4},
+    {name:'鋼の剣',      atk:10, minFloor:6},
+    {name:'魔法の剣',    atk:14, minFloor:8},
+    {name:'ミスリルの剣', atk:19, minFloor:10}
+  ];
+  const ARMORS = [
+    {name:'布の服',      def:1,  minFloor:1},
+    {name:'革の鎧',      def:2,  minFloor:2},
+    {name:'鎖かたびら',   def:4,  minFloor:4},
+    {name:'鉄の鎧',      def:6,  minFloor:6},
+    {name:'魔法の鎧',    def:9,  minFloor:8},
+    {name:'ミスリルの鎧', def:13, minFloor:10}
+  ];
+
+  const ITEM_NAMES = { potion:'ポーション', scroll:'炎の巻物' };
+  const MON_NAMES = { slime:'スライム', bat:'コウモリ', skeleton:'スケルトン', goblin:'ゴブリン', ghost:'ゴースト', ogre:'オーガ', boss:'洞窟の魔王' };
+
+  // ---------- SOUND (Web Audio API, synthesized 8bit-ish SE) ----------
+  let actx = null;
+  function ensureAudio(){
+    if(!actx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return;
+      actx = new AC();
+    }
+    if(actx.state==='suspended') actx.resume();
+  }
+  function beep(freq, duration, type, vol, startDelay, slideTo){
+    ensureAudio();
+    if(!actx) return;
+    type = type||'square'; vol = vol==null?0.14:vol; startDelay = startDelay||0;
+    const t0 = actx.currentTime + startDelay;
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    if(slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t0+duration);
+    gain.gain.setValueAtTime(vol, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0+duration);
+    osc.connect(gain).connect(actx.destination);
+    osc.start(t0);
+    osc.stop(t0+duration+0.02);
+  }
+  function playSeq(notes, type, vol){
+    let t=0;
+    notes.forEach(([f,d])=>{ beep(f,d,type,vol,t); t+=d; });
+  }
+  const sfx = {
+    attack:  ()=>beep(200,0.07,'square',0.13,0,120),
+    hit:     ()=>beep(100,0.12,'sawtooth',0.16),
+    defeat:  ()=>playSeq([[300,0.05],[220,0.05],[150,0.09]],'square',0.13),
+    levelUp: ()=>playSeq([[262,0.08],[330,0.08],[392,0.08],[523,0.18]],'square',0.15),
+    item:    ()=>playSeq([[523,0.06],[784,0.09]],'square',0.12),
+    weapon:  ()=>playSeq([[392,0.06],[523,0.06],[659,0.1]],'triangle',0.14),
+    stairs:  ()=>playSeq([[392,0.07],[330,0.07],[262,0.12]],'triangle',0.12),
+    potion:  ()=>beep(440,0.16,'sine',0.13,0,660),
+    scroll:  ()=>beep(220,0.22,'sawtooth',0.14,0,60),
+    select:  ()=>beep(660,0.05,'square',0.09),
+    gameOver:()=>playSeq([[220,0.15],[196,0.15],[164,0.15],[110,0.35]],'square',0.15),
+    win:     ()=>playSeq([[392,0.12],[523,0.12],[659,0.12],[784,0.12],[1046,0.32]],'square',0.16)
+  };
+
+  // ---------- STATE ----------
+  let state = 'title';
+  let floorNum = 1;
+  let map, rooms, stairsPos, monsters, items, player;
+  let msgLines = ['洞窟に足を踏み入れた…'];
+
+  function log(t){
+    msgLines.push(t);
+    if(msgLines.length>3) msgLines.shift();
+    document.getElementById('msgLog').textContent = msgLines.join(' / ');
+  }
+  function rnd(n){ return Math.floor(Math.random()*n); }
+  function rndRange(a,b){ return a + rnd(b-a+1); }
+  function pickTier(list,n){ let best=list[0]; for(const t of list){ if(t.minFloor<=n) best=t; } return best; }
+
+  // ---------- MAP GENERATION ----------
+  function newMap(){
+    const grid=[];
+    for(let y=0;y<MAP_H;y++){ const row=[]; for(let x=0;x<MAP_W;x++) row.push(1); grid.push(row); }
+    return grid;
+  }
+  function carveRoom(grid,r){
+    for(let y=r.y;y<r.y+r.h;y++) for(let x=r.x;x<r.x+r.w;x++) grid[y][x]=0;
+  }
+  function carveCorridor(grid,x1,y1,x2,y2){
+    let x=x1,y=y1;
+    if(Math.random()<0.5){
+      while(x!==x2){ grid[y][x]=0; x += x2>x?1:-1; }
+      while(y!==y2){ grid[y][x]=0; y += y2>y?1:-1; }
+    } else {
+      while(y!==y2){ grid[y][x]=0; y += y2>y?1:-1; }
+      while(x!==x2){ grid[y][x]=0; x += x2>x?1:-1; }
+    }
+    grid[y2][x2]=0;
+  }
+  function overlaps(r,list,pad){
+    for(const o of list){
+      if(r.x-pad < o.x+o.w && r.x+r.w+pad > o.x && r.y-pad < o.y+o.h && r.y+r.h+pad > o.y) return true;
+    }
+    return false;
+  }
+
+  function scatterItems(n, roomList, start, stairs){
+    const its=[];
+    const pool=['potion','potion'];
+    if(n>=2 && Math.random()<0.6) pool.push('scroll');
+    if(Math.random()<0.35) pool.push('potion');
+    if(n%3===1) pool.push('weapon');
+    if(n%3===2 || n===1) pool.push('armor');
+    pool.forEach(kind=>{
+      const r = roomList[rnd(roomList.length)];
+      const ix=r.x+rnd(r.w), iy=r.y+rnd(r.h);
+      if((ix===start.x&&iy===start.y)||(ix===stairs.x&&iy===stairs.y)) return;
+      if(kind==='weapon'){ const w=pickTier(WEAPONS,n); its.push({x:ix,y:iy,type:'weapon',name:w.name,atk:w.atk}); }
+      else if(kind==='armor'){ const a=pickTier(ARMORS,n); its.push({x:ix,y:iy,type:'armor',name:a.name,def:a.def}); }
+      else its.push({x:ix,y:iy,type:kind});
+    });
+    return its;
+  }
+
+  function generateFloor(n){
+    const grid = newMap();
+    const roomList = [];
+    const roomCount = 6 + rnd(3);
+    let attempts=0;
+    while(roomList.length<roomCount && attempts<200){
+      attempts++;
+      const w=rndRange(3,6), h=rndRange(3,5);
+      const x=rndRange(1,MAP_W-w-2), y=rndRange(1,MAP_H-h-2);
+      const r={x,y,w,h};
+      if(!overlaps(r,roomList,1)){ roomList.push(r); carveRoom(grid,r); }
+    }
+    for(let i=1;i<roomList.length;i++){
+      const a=roomList[i-1], b=roomList[i];
+      carveCorridor(grid, a.x+((a.w/2)|0), a.y+((a.h/2)|0), b.x+((b.w/2)|0), b.y+((b.h/2)|0));
+    }
+    const startRoom = roomList[0], endRoom = roomList[roomList.length-1];
+    const start = { x:startRoom.x+((startRoom.w/2)|0), y:startRoom.y+((startRoom.h/2)|0) };
+    const stairs = { x:endRoom.x+((endRoom.w/2)|0), y:endRoom.y+((endRoom.h/2)|0) };
+
+    const mons = [];
+    const isBossFloor = n===MAX_FLOOR;
+    const unlockedTypes = Object.keys(TYPES).filter(k=>k!=='boss' && TYPES[k].minFloor<=n);
+    const roomEnd = isBossFloor ? roomList.length-1 : roomList.length;
+    const spawnChance = Math.min(0.85, 0.6+n*0.015);
+    for(let i=1;i<roomEnd;i++){
+      const r = roomList[i];
+      if(Math.random()<spawnChance){
+        const t = unlockedTypes[rnd(unlockedTypes.length)];
+        const mx=r.x+rnd(r.w), my=r.y+rnd(r.h);
+        if(mx===stairs.x && my===stairs.y) continue;
+        mons.push(makeMonster(t,mx,my,n));
+      }
+      if(n>=6 && (r.w*r.h)>=16 && Math.random()<0.35){
+        const t = unlockedTypes[rnd(unlockedTypes.length)];
+        const mx=r.x+rnd(r.w), my=r.y+rnd(r.h);
+        if(!(mx===stairs.x && my===stairs.y) && !mons.some(m=>m.x===mx&&m.y===my)){
+          mons.push(makeMonster(t,mx,my,n));
+        }
+      }
+    }
+    if(isBossFloor){
+      const br = roomList[roomList.length-1];
+      let bx,by,tries=0;
+      do{ bx=br.x+rnd(br.w); by=br.y+rnd(br.h); tries++; } while(bx===stairs.x && by===stairs.y && tries<20);
+      mons.push(makeMonster('boss',bx,by,n));
+    }
+
+    const its = scatterItems(n, roomList, start, stairs);
+    return { grid, rooms:roomList, start, stairs, monsters:mons, items:its };
+  }
+
+  function makeMonster(type,x,y,n){
+    const b = TYPES[type];
+    const hp = b.hp + n*2;
+    const atk = b.atk + Math.floor(n/2);
+    const def = b.def + Math.floor(n/5);
+    const xpValue = b.xp + Math.floor(n*1.2);
+    return { x,y, vx:x, vy:y, hp, maxhp:hp, atk, def, type, alive:true, xpValue, atkAnim:null, hitFlash:null, aggro:false };
+  }
+
+  // ---------- PLAYER / PROGRESSION ----------
+  function recomputeStats(){
+    player.lvAtk = 3 + (player.level-1);
+    player.lvDef = 1 + Math.floor((player.level-1)/2);
+    player.maxhp = 20 + (player.level-1)*5;
+    player.atk = player.lvAtk + player.weaponBonus;
+    player.def = player.lvDef + player.armorBonus;
+  }
+
+  function gainXP(amount){
+    player.xp += amount;
+    log('経験値を'+amount+'獲得!');
+    while(player.xp >= player.xpNext){
+      player.xp -= player.xpNext;
+      player.level++;
+      recomputeStats();
+      player.xpNext = player.level*12;
+      player.hp = Math.min(player.maxhp, player.hp + Math.floor(player.maxhp*0.3));
+      log('レベルアップ! Lv'+player.level+'になった!');
+      spawnDamageText(player.x, player.y-0.3, 'LEVEL UP!', '#f4c430');
+      sfx.levelUp();
+    }
+  }
+
+  // ---------- GAME FLOW ----------
+  function startNewGame(){
+    floorNum = 1;
+    player = {
+      x:0,y:0, vx:0,vy:0, facing:'down',
+      level:1, xp:0, xpNext:12,
+      weaponBonus:0, armorBonus:0, weaponName:'素手', armorName:'布の服',
+      inventory:{ potion:1, scroll:0 }, selectedItem:'potion',
+      atkAnim:null, hitFlash:null
+    };
+    recomputeStats();
+    player.hp = player.maxhp;
+    loadFloor(floorNum);
+    msgLines = ['洞窟に足を踏み入れた…'];
+    document.getElementById('msgLog').textContent = msgLines[0];
+    state = 'playing';
+    show('none');
+    updateInvUI();
+  }
+
+  function loadFloor(n){
+    const f = generateFloor(n);
+    map=f.grid; rooms=f.rooms; stairsPos=f.stairs; monsters=f.monsters; items=f.items;
+    player.x=f.start.x; player.y=f.start.y; player.vx=player.x; player.vy=player.y;
+    player.atkAnim=null; player.hitFlash=null;
+    effects=[];
+    document.getElementById('floorLabel').textContent = 'B'+n+'F';
+    if(n===MAX_FLOOR) log('地の底から強大な気配を感じる…');
+  }
+
+  function isWall(x,y){ if(x<0||y<0||x>=MAP_W||y>=MAP_H) return true; return map[y][x]===1; }
+  function monsterAt(x,y){ return monsters.find(m=>m.alive && m.x===x && m.y===y); }
+  function itemAt(x,y){ return items.find(it=>it.x===x && it.y===y); }
+  function isAnimating(){ return Math.abs(player.x-player.vx)>0.02 || Math.abs(player.y-player.vy)>0.02; }
+  function setFacing(dx,dy){
+    if(dx>0) player.facing='right'; else if(dx<0) player.facing='left';
+    else if(dy>0) player.facing='down'; else if(dy<0) player.facing='up';
+  }
+
+  // ---------- ATTACK / ITEM FX ----------
+  let nowTs=0;
+  let effects=[];
+  let shakeStart=-1000;
+
+  function lunge(entity,dx,dy){ entity.atkAnim={start:nowTs,dx,dy}; }
+  function flash(entity){ entity.hitFlash=nowTs; }
+  function spawnDamageText(gx,gy,text,color){ effects.push({type:'dmg',x:gx+0.5,y:gy+0.15,text,color,start:nowTs}); }
+  function spawnBolt(x1,y1,x2,y2){ effects.push({type:'bolt',x1:x1+0.5,y1:y1+0.5,x2:x2+0.5,y2:y2+0.5,start:nowTs}); }
+  function animOffset(entity){
+    if(!entity.atkAnim) return [0,0];
+    const age=nowTs-entity.atkAnim.start, dur=190;
+    if(age>dur){ entity.atkAnim=null; return [0,0]; }
+    const p=age/dur, f=p<0.5?p*2:(1-p)*2, dist=0.32;
+    return [entity.atkAnim.dx*dist*f, entity.atkAnim.dy*dist*f];
+  }
+
+  // ---------- ACTIONS ----------
+  function tryMove(dx,dy){
+    if(state!=='playing' || isAnimating()) return;
+    setFacing(dx,dy);
+    const nx=player.x+dx, ny=player.y+dy;
+    if(isWall(nx,ny)) return;
+    if(monsterAt(nx,ny)) return;
+    player.x=nx; player.y=ny;
+    checkTile();
+    endPlayerTurn();
+  }
+
+  function attackAction(){
+    if(state!=='playing' || isAnimating()) return;
+    const [dx,dy] = DIRS[player.facing];
+    const tx=player.x+dx, ty=player.y+dy;
+    const mon=monsterAt(tx,ty);
+    if(mon){
+      lunge(player,dx,dy);
+      const dmg=doAttack(player,mon,true);
+      flash(mon);
+      spawnDamageText(mon.x,mon.y,dmg,'#fff8d0');
+      sfx.attack();
+      handleMonsterMaybeDead(mon);
+    } else {
+      log('その場で様子をうかがった…');
+      sfx.select();
+    }
+    endPlayerTurn();
+  }
+
+  function doAttack(attacker,target,attackerIsPlayer){
+    const dmg = Math.max(1, attacker.atk - target.def + rndRange(-1,1));
+    target.hp -= dmg;
+    if(attackerIsPlayer){
+      log(nameOf(target)+'に'+dmg+'のダメージ!');
+    } else {
+      log(nameOf(attacker)+'から'+dmg+'のダメージ!');
+    }
+    return dmg;
+  }
+
+  function handleMonsterMaybeDead(mon){
+    if(mon.hp<=0 && mon.alive){
+      mon.alive=false;
+      log(nameOf(mon)+'をたおした!');
+      sfx.defeat();
+      gainXP(mon.xpValue);
+    }
+  }
+
+  function nameOf(m){ return MON_NAMES[m.type] || 'てき'; }
+
+  function checkTile(){
+    if(player.x===stairsPos.x && player.y===stairsPos.y){
+      if(floorNum===MAX_FLOOR){
+        const bossAlive = monsters.some(m=>m.type==='boss' && m.alive);
+        if(bossAlive){ log('宝箱には鎖がかかっている…魔王を倒さねば開かない!'); return; }
+        winGame();
+        return;
+      }
+      floorNum++;
+      loadFloor(floorNum);
+      log(floorNum+'階へ降りた…');
+      sfx.stairs();
+      return;
+    }
+    const it = itemAt(player.x,player.y);
+    if(it){
+      items = items.filter(x=>x!==it);
+      if(it.type==='potion'){ player.inventory.potion++; log('ポーションを手に入れた!'); sfx.item(); }
+      else if(it.type==='scroll'){ player.inventory.scroll++; log('炎の巻物を手に入れた!'); sfx.item(); }
+      else if(it.type==='weapon'){
+        if(it.atk>player.weaponBonus){
+          player.weaponBonus=it.atk; player.weaponName=it.name; recomputeStats();
+          log(it.name+'を手に入れ、装備した!(攻撃力+'+it.atk+')');
+          sfx.weapon();
+        } else {
+          log(it.name+'を見つけたが、今の武器の方が優れている。');
+        }
+      } else if(it.type==='armor'){
+        if(it.def>player.armorBonus){
+          player.armorBonus=it.def; player.armorName=it.name; recomputeStats();
+          log(it.name+'を手に入れ、装備した!(防御力+'+it.def+')');
+          sfx.weapon();
+        } else {
+          log(it.name+'を見つけたが、今の防具の方が優れている。');
+        }
+      }
+      updateInvUI();
+    }
+  }
+
+  function updateInvUI(){
+    const owned = Object.keys(player.inventory).filter(k=>player.inventory[k]>0);
+    if(owned.length===0){ player.selectedItem=null; }
+    else if(!player.selectedItem || player.inventory[player.selectedItem]<=0){ player.selectedItem=owned[0]; }
+    const txt = player.selectedItem
+      ? ITEM_NAMES[player.selectedItem]+' ×'+player.inventory[player.selectedItem]+'(タップで切替)'
+      : 'アイテムなし';
+    document.getElementById('invText').textContent = txt;
+  }
+
+  function cycleItem(){
+    if(state!=='playing') return;
+    const owned = Object.keys(player.inventory).filter(k=>player.inventory[k]>0);
+    if(owned.length===0) return;
+    let idx = owned.indexOf(player.selectedItem);
+    idx = (idx+1) % owned.length;
+    player.selectedItem = owned[idx];
+    updateInvUI();
+  }
+
+  function useSelectedItem(){
+    if(state!=='playing' || isAnimating()) return;
+    if(!player.selectedItem || player.inventory[player.selectedItem]<=0){
+      log('つかえるアイテムがない。');
+      return;
+    }
+    if(player.selectedItem==='potion'){
+      player.inventory.potion--;
+      const heal=8;
+      player.hp=Math.min(player.maxhp, player.hp+heal);
+      log('ポーションを使い、HPが'+heal+'回復した!');
+      sfx.potion();
+      updateInvUI();
+      endPlayerTurn();
+    } else if(player.selectedItem==='scroll'){
+      player.inventory.scroll--;
+      sfx.scroll();
+      castFire();
+      updateInvUI();
+      endPlayerTurn();
+    }
+  }
+
+  function castFire(){
+    const [dx,dy] = DIRS[player.facing];
+    let tx=player.x, ty=player.y, hitMon=null;
+    for(let i=0;i<4;i++){
+      const nx=tx+dx, ny=ty+dy;
+      if(isWall(nx,ny)) break;
+      tx=nx; ty=ny;
+      const m=monsterAt(tx,ty);
+      if(m){ hitMon=m; break; }
+    }
+    spawnBolt(player.x,player.y,tx,ty);
+    if(hitMon){
+      const dmg = 10 + Math.floor(floorNum*0.5) + rndRange(-1,2);
+      hitMon.hp -= dmg;
+      flash(hitMon);
+      spawnDamageText(hitMon.x,hitMon.y,dmg,'#ffb060');
+      log('炎の巻物で'+nameOf(hitMon)+'に'+dmg+'のダメージ!');
+      handleMonsterMaybeDead(hitMon);
+    } else {
+      log('炎は虚空に消えた…');
+    }
+  }
+
+  function endPlayerTurn(){
+    if(state!=='playing') return;
+    monsters.forEach(m=>{
+      if(!m.alive) return;
+      const dist = Math.abs(m.x-player.x)+Math.abs(m.y-player.y);
+      if(!m.aggro && dist<=3) m.aggro = true;
+      if(dist===1){
+        const ddx = player.x>m.x?1:(player.x<m.x?-1:0);
+        const ddy = player.y>m.y?1:(player.y<m.y?-1:0);
+        lunge(m,ddx,ddy);
+        const dmg = doAttack(m,player,false);
+        flash(player);
+        spawnDamageText(player.x,player.y,dmg,'#ff8060');
+        sfx.hit();
+        shakeStart = nowTs;
+      } else if(m.aggro){
+        let dx=0,dy=0;
+        if(Math.abs(player.x-m.x) > Math.abs(player.y-m.y)) dx = player.x>m.x?1:-1;
+        else dy = player.y>m.y?1:-1;
+        const nx=m.x+dx, ny=m.y+dy;
+        if(!isWall(nx,ny) && !monsterAt(nx,ny) && !(nx===player.x&&ny===player.y)){ m.x=nx; m.y=ny; }
+      } else if(Math.random()<0.4){
+        const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+        const [dx,dy]=dirs[rnd(4)];
+        const nx=m.x+dx, ny=m.y+dy;
+        if(!isWall(nx,ny) && !monsterAt(nx,ny) && !(nx===player.x&&ny===player.y)){ m.x=nx; m.y=ny; }
+      }
+    });
+    monsters = monsters.filter(m=>m.alive);
+    if(player.hp<=0) gameOver();
+  }
+
+  function gameOver(){
+    heldDir = null;
+    state='gameover';
+    sfx.gameOver();
+    document.getElementById('gameOverDesc').innerHTML =
+      'ウユヒ王子は洞窟の闇に倒れた。<br>(到達 B'+floorNum+'F / Lv'+player.level+')<br>しかし伝説はまた最初から語られる。';
+    show('gameOverScreen');
+  }
+  function winGame(){ heldDir = null; state='win'; sfx.win(); show('winScreen'); }
+  function show(id){
+    ['titleScreen','gameOverScreen','winScreen'].forEach(s=>{
+      document.getElementById(s).classList.toggle('hidden', s!==id);
+    });
+  }
+
+  // ---------- VISUAL UPDATE ----------
+  function approach(e,dt){
+    let dx=e.x-e.vx, dy=e.y-e.vy;
+    const dist=Math.hypot(dx,dy);
+    if(dist<0.001){ e.vx=e.x; e.vy=e.y; return; }
+    const step=Math.min(dist, MOVE_SPEED*dt);
+    e.vx += dx/dist*step; e.vy += dy/dist*step;
+  }
+  function updateVisuals(dt){
+    approach(player,dt);
+    monsters.forEach(m=>approach(m,dt));
+  }
+
+  // ---------- RENDER: TILES / ITEMS ----------
+  function drawWall(sx,sy){
+    ctx.fillStyle=COL.wallBase; ctx.fillRect(sx,sy,TILE,TILE);
+    ctx.fillStyle=COL.wallDark; ctx.fillRect(sx,sy+TILE-4,TILE,4); ctx.fillRect(sx,sy,4,TILE);
+    ctx.fillStyle=COL.wallLight; ctx.fillRect(sx+4,sy+4,TILE-8,3);
+    ctx.strokeStyle=COL.wallDark; ctx.lineWidth=1; ctx.strokeRect(sx+0.5,sy+0.5,TILE-1,TILE-1);
+  }
+  function drawFloor(sx,sy,gx,gy){
+    ctx.fillStyle=COL.floorBase; ctx.fillRect(sx,sy,TILE,TILE);
+    if((gx*7+gy*13)%5===0){ ctx.fillStyle=COL.floorDot; ctx.fillRect(sx+TILE*0.3,sy+TILE*0.3,3,3); }
+    if((gx*3+gy*11)%9===0){ ctx.fillStyle=COL.floorDot; ctx.fillRect(sx+TILE*0.6,sy+TILE*0.6,2,2); }
+  }
+  function drawStairs(sx,sy){
+    drawFloor(sx,sy,0,1);
+    ctx.fillStyle=COL.stairs; ctx.fillRect(sx+4,sy+4,TILE-8,TILE-8);
+    ctx.strokeStyle=COL.stairsLine;
+    for(let i=0;i<4;i++){ ctx.beginPath(); ctx.moveTo(sx+4,sy+6+i*4); ctx.lineTo(sx+TILE-4,sy+6+i*4); ctx.stroke(); }
+  }
+  function drawPotionItem(sx,sy){
+    ctx.fillStyle=COL.potionGlass; ctx.fillRect(sx+TILE*0.42,sy+TILE*0.25,TILE*0.16,TILE*0.15);
+    ctx.fillStyle=COL.potion; ctx.fillRect(sx+TILE*0.32,sy+TILE*0.4,TILE*0.36,TILE*0.4);
+    ctx.strokeStyle=COL.outline; ctx.strokeRect(sx+TILE*0.32,sy+TILE*0.4,TILE*0.36,TILE*0.4);
+  }
+  function drawScrollItem(sx,sy){
+    ctx.fillStyle=COL.scroll; ctx.fillRect(sx+TILE*0.28,sy+TILE*0.32,TILE*0.44,TILE*0.38);
+    ctx.fillStyle=COL.scrollBand; ctx.fillRect(sx+TILE*0.28,sy+TILE*0.46,TILE*0.44,TILE*0.08);
+    ctx.strokeStyle=COL.outline; ctx.strokeRect(sx+TILE*0.28,sy+TILE*0.32,TILE*0.44,TILE*0.38);
+  }
+  function drawWeaponItem(sx,sy){
+    ctx.fillStyle=COL.hilt; ctx.fillRect(sx+TILE*0.44,sy+TILE*0.62,TILE*0.12,TILE*0.14);
+    ctx.fillStyle=COL.itemSword; ctx.fillRect(sx+TILE*0.46,sy+TILE*0.22,TILE*0.08,TILE*0.44);
+    ctx.fillStyle=COL.swordEdge; ctx.fillRect(sx+TILE*0.48,sy+TILE*0.22,TILE*0.03,TILE*0.44);
+    ctx.fillStyle=COL.hilt; ctx.fillRect(sx+TILE*0.34,sy+TILE*0.58,TILE*0.32,TILE*0.06);
+  }
+  function drawArmorItem(sx,sy){
+    ctx.fillStyle=COL.itemShield; ctx.fillRect(sx+TILE*0.28,sy+TILE*0.26,TILE*0.44,TILE*0.4);
+    ctx.strokeStyle=COL.outline; ctx.strokeRect(sx+TILE*0.28,sy+TILE*0.26,TILE*0.44,TILE*0.4);
+    ctx.fillStyle=COL.crown; ctx.fillRect(sx+TILE*0.44,sy+TILE*0.36,TILE*0.12,TILE*0.12);
+  }
+  function drawFlash(sx,sy,entity){
+    if(!entity.hitFlash) return;
+    const age=nowTs-entity.hitFlash;
+    if(age>150){ entity.hitFlash=null; return; }
+    ctx.save(); ctx.globalAlpha=0.6*(1-age/150); ctx.fillStyle='#ffffff';
+    ctx.fillRect(sx-1,sy-1,TILE+2,TILE+2); ctx.restore();
+  }
+  function drawHpBar(cx,topY,hp,maxhp,w){
+    const ratio=Math.max(0,hp/maxhp);
+    ctx.fillStyle='#2a1a1a'; ctx.fillRect(cx-w/2,topY,w,4);
+    ctx.fillStyle= ratio>0.3?'#c04040':'#e0a020'; ctx.fillRect(cx-w/2,topY,w*ratio,4);
+  }
+
+  // ---------- RENDER: CHARACTERS ----------
+  function drawPlayer(sx,sy,facing,moving,t_now){
+    const t=TILE;
+    const bob = moving ? Math.sin(t_now*0.02)*1.4 : 0;
+    ctx.save(); ctx.translate(sx,sy+bob);
+    const mirror = facing==='left';
+    if(mirror){ ctx.translate(t,0); ctx.scale(-1,1); }
+    const f = mirror ? 'right' : facing;
+
+    ctx.fillStyle=COL.capeDark; ctx.fillRect(t*0.16,t*0.34,t*0.14,t*0.48);
+    ctx.fillStyle=COL.cape; ctx.fillRect(t*0.14,t*0.32,t*0.12,t*0.46);
+
+    if(f!=='up'){
+      ctx.fillStyle=COL.shield; ctx.fillRect(t*0.06,t*0.44,t*0.14,t*0.26);
+      ctx.strokeStyle=COL.outline; ctx.strokeRect(t*0.06,t*0.44,t*0.14,t*0.26);
+      ctx.fillStyle=COL.shieldGem; ctx.fillRect(t*0.1,t*0.53,t*0.06,t*0.06);
+    }
+
+    ctx.fillStyle='#6b4226'; ctx.fillRect(t*0.3,t*0.8,t*0.16,t*0.14); ctx.fillRect(t*0.5,t*0.8,t*0.16,t*0.14);
+
+    ctx.fillStyle=COL.armor; ctx.fillRect(t*0.26,t*0.42,t*0.46,t*0.4);
+    ctx.fillStyle=COL.armorDark; ctx.fillRect(t*0.26,t*0.7,t*0.46,t*0.12);
+    ctx.fillStyle=COL.armorLight; ctx.fillRect(t*0.28,t*0.44,t*0.42,t*0.05);
+
+    ctx.fillStyle=COL.skin; ctx.fillRect(t*0.32,t*0.18,t*0.36,t*0.24);
+    ctx.fillStyle=COL.skinShadow; ctx.fillRect(t*0.32,t*0.36,t*0.36,t*0.06);
+
+    ctx.fillStyle=COL.hair;
+    if(f==='up'){ ctx.fillRect(t*0.3,t*0.14,t*0.4,t*0.28); }
+    else { ctx.fillRect(t*0.3,t*0.13,t*0.4,t*0.1); ctx.fillRect(t*0.3,t*0.2,t*0.06,t*0.14); }
+
+    if(f!=='up'){
+      ctx.fillStyle=COL.outline;
+      ctx.fillRect(t*0.42,t*0.28,t*0.05,t*0.06); ctx.fillRect(t*0.56,t*0.28,t*0.05,t*0.06);
+    }
+
+    ctx.fillStyle=COL.crownDark; ctx.fillRect(t*0.32,t*0.1,t*0.36,t*0.06);
+    ctx.fillStyle=COL.crown; ctx.fillRect(t*0.34,t*0.06,t*0.32,t*0.06); ctx.fillRect(t*0.47,t*0.0,t*0.07,t*0.08);
+
+    if(f==='down' || f==='right'){
+      ctx.fillStyle=COL.hilt; ctx.fillRect(t*0.74,t*0.5,t*0.06,t*0.1);
+      ctx.fillStyle=COL.sword; ctx.fillRect(t*0.72,t*0.16,t*0.1,t*0.36);
+      ctx.fillStyle=COL.swordEdge; ctx.fillRect(t*0.76,t*0.16,t*0.03,t*0.36);
+    } else if(f==='up'){
+      ctx.fillStyle=COL.hilt; ctx.fillRect(t*0.74,t*0.5,t*0.06,t*0.1);
+      ctx.fillStyle=COL.sword; ctx.fillRect(t*0.72,t*0.3,t*0.1,t*0.24);
+    }
+    ctx.restore();
+  }
+
+  function drawSlime(sx,sy,t_now,phase){
+    const t=TILE, bob=Math.sin(t_now*0.006+phase)*1.6, squish=1+Math.sin(t_now*0.006+phase)*0.06;
+    ctx.save(); ctx.translate(sx,sy+2+bob*0.5);
+    ctx.fillStyle=COL.slimeDark; ctx.fillRect(t*0.2,t*0.52,t*0.6,t*0.3*squish);
+    ctx.fillStyle=COL.slime; ctx.fillRect(t*0.16,t*0.32,t*0.68,t*0.34*squish);
+    ctx.fillStyle=COL.slimeLight; ctx.fillRect(t*0.24,t*0.36,t*0.2,t*0.08);
+    ctx.fillStyle=COL.slimeEye; ctx.fillRect(t*0.32,t*0.46,t*0.1,t*0.1); ctx.fillRect(t*0.56,t*0.46,t*0.1,t*0.1);
+    ctx.restore();
+  }
+
+  function drawBat(sx,sy,t_now,phase){
+    const t=TILE, flap=Math.sin(t_now*0.012+phase);
+    ctx.save(); ctx.translate(sx,sy);
+    ctx.fillStyle=COL.batDark;
+    ctx.beginPath(); ctx.moveTo(t*0.5,t*0.42); ctx.lineTo(t*0.1,t*0.24-flap*4/TILE*t); ctx.lineTo(t*0.28,t*0.56); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(t*0.5,t*0.42); ctx.lineTo(t*0.9,t*0.24+flap*4/TILE*t); ctx.lineTo(t*0.72,t*0.56); ctx.closePath(); ctx.fill();
+    ctx.fillStyle=COL.bat; ctx.fillRect(t*0.36,t*0.34,t*0.28,t*0.26);
+    ctx.fillStyle=COL.batLight; ctx.fillRect(t*0.4,t*0.36,t*0.08,t*0.06); ctx.fillRect(t*0.52,t*0.36,t*0.08,t*0.06);
+    ctx.fillStyle=COL.batEye; ctx.fillRect(t*0.41,t*0.42,t*0.05,t*0.05); ctx.fillRect(t*0.54,t*0.42,t*0.05,t*0.05);
+    ctx.restore();
+  }
+
+  function drawSkeleton(sx,sy){
+    const t=TILE;
+    ctx.save(); ctx.translate(sx,sy);
+    ctx.fillStyle=COL.spear; ctx.fillRect(t*0.76,t*0.1,t*0.06,t*0.7);
+    ctx.beginPath(); ctx.moveTo(t*0.7,t*0.1); ctx.lineTo(t*0.9,t*0.1); ctx.lineTo(t*0.79,t*-0.05); ctx.closePath(); ctx.fill();
+    ctx.fillStyle=COL.bone; ctx.fillRect(t*0.34,t*0.18,t*0.32,t*0.22); ctx.fillRect(t*0.3,t*0.42,t*0.4,t*0.38);
+    ctx.fillStyle=COL.boneDark;
+    ctx.fillRect(t*0.32,t*0.5,t*0.36,t*0.04); ctx.fillRect(t*0.32,t*0.58,t*0.36,t*0.04); ctx.fillRect(t*0.32,t*0.66,t*0.36,t*0.04);
+    ctx.fillStyle=COL.boneEye; ctx.fillRect(t*0.4,t*0.26,t*0.06,t*0.05); ctx.fillRect(t*0.54,t*0.26,t*0.06,t*0.05);
+    ctx.restore();
+  }
+
+  function drawGoblin(sx,sy,t_now,phase){
+    const t=TILE, sway=Math.sin(t_now*0.01+phase)*2;
+    ctx.save(); ctx.translate(sx,sy);
+    ctx.fillStyle=COL.club; ctx.save(); ctx.translate(t*0.78,t*0.5); ctx.rotate(0.3+sway*0.02);
+    ctx.fillRect(-t*0.05,-t*0.3,t*0.1,t*0.34); ctx.restore();
+    ctx.fillStyle=COL.goblinDark; ctx.fillRect(t*0.3,t*0.8,t*0.16,t*0.12); ctx.fillRect(t*0.5,t*0.8,t*0.16,t*0.12);
+    ctx.fillStyle=COL.goblin; ctx.fillRect(t*0.28,t*0.44,t*0.44,t*0.38);
+    ctx.fillStyle=COL.goblinDark; ctx.fillRect(t*0.28,t*0.7,t*0.44,t*0.1);
+    ctx.fillStyle=COL.goblin; ctx.fillRect(t*0.32,t*0.2,t*0.36,t*0.26);
+    ctx.fillStyle=COL.outline; ctx.fillRect(t*0.38,t*0.3,t*0.06,t*0.06); ctx.fillRect(t*0.56,t*0.3,t*0.06,t*0.06);
+    ctx.fillStyle=COL.tusks; ctx.fillRect(t*0.4,t*0.4,t*0.05,t*0.08); ctx.fillRect(t*0.55,t*0.4,t*0.05,t*0.08);
+    ctx.restore();
+  }
+
+  function drawGhost(sx,sy,t_now,phase){
+    const t=TILE, bob=Math.sin(t_now*0.005+phase)*3;
+    ctx.save(); ctx.translate(sx,sy+bob); ctx.globalAlpha=0.8;
+    ctx.fillStyle=COL.ghostDark; ctx.fillRect(t*0.2,t*0.3,t*0.6,t*0.42);
+    ctx.beginPath();
+    for(let i=0;i<4;i++){
+      const bx=t*0.2+i*t*0.15;
+      ctx.moveTo(bx,t*0.72);
+      ctx.lineTo(bx+t*0.075, t*0.85+Math.sin(t_now*0.01+i)*2);
+      ctx.lineTo(bx+t*0.15,t*0.72);
+    }
+    ctx.fill();
+    ctx.fillStyle=COL.ghostBody; ctx.fillRect(t*0.22,t*0.26,t*0.56,t*0.4);
+    ctx.fillStyle=COL.ghostEye; ctx.fillRect(t*0.36,t*0.4,t*0.08,t*0.1); ctx.fillRect(t*0.54,t*0.4,t*0.08,t*0.1);
+    ctx.restore();
+  }
+
+  function drawOgre(sx,sy,t_now,phase){
+    const t=TILE, sway=Math.sin(t_now*0.008+phase)*1.4;
+    ctx.save(); ctx.translate(sx,sy+sway*0.3);
+    ctx.fillStyle=COL.ogreDark; ctx.fillRect(t*0.16,t*0.78,t*0.2,t*0.16); ctx.fillRect(t*0.6,t*0.78,t*0.2,t*0.16);
+    ctx.fillStyle=COL.ogre; ctx.fillRect(t*0.14,t*0.4,t*0.72,t*0.44);
+    ctx.fillStyle=COL.ogreDark; ctx.fillRect(t*0.14,t*0.7,t*0.72,t*0.1);
+    ctx.fillStyle=COL.ogre; ctx.fillRect(t*0.28,t*0.14,t*0.4,t*0.3);
+    ctx.fillStyle=COL.outline; ctx.fillRect(t*0.36,t*0.26,t*0.07,t*0.07); ctx.fillRect(t*0.54,t*0.26,t*0.07,t*0.07);
+    ctx.fillStyle=COL.tusks; ctx.fillRect(t*0.38,t*0.38,t*0.06,t*0.1); ctx.fillRect(t*0.52,t*0.38,t*0.06,t*0.1);
+    ctx.restore();
+  }
+
+  function drawBoss(sx,sy,t_now){
+    const t=TILE, sway=Math.sin(t_now*0.006)*2;
+    ctx.save(); ctx.translate(sx-t*0.2,sy-t*0.28+sway*0.3);
+    const s=1.4;
+    ctx.scale(s,s);
+    ctx.fillStyle=COL.bossDark; ctx.fillRect(t*0.1,t*0.34,t*0.16,t*0.5); ctx.fillRect(t*0.64,t*0.34,t*0.16,t*0.5);
+    ctx.fillStyle=COL.bossBody; ctx.fillRect(t*0.2,t*0.42,t*0.5,t*0.44);
+    ctx.fillStyle=COL.bossDark; ctx.fillRect(t*0.2,t*0.74,t*0.5,t*0.1);
+    ctx.fillStyle=COL.bossBody; ctx.fillRect(t*0.28,t*0.16,t*0.34,t*0.3);
+    ctx.fillStyle=COL.bossHorn;
+    ctx.beginPath(); ctx.moveTo(t*0.3,t*0.18); ctx.lineTo(t*0.24,t*0.02); ctx.lineTo(t*0.36,t*0.16); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(t*0.6,t*0.18); ctx.lineTo(t*0.66,t*0.02); ctx.lineTo(t*0.54,t*0.16); ctx.closePath(); ctx.fill();
+    ctx.fillStyle=COL.bossEye; ctx.fillRect(t*0.35,t*0.28,t*0.07,t*0.06); ctx.fillRect(t*0.48,t*0.28,t*0.07,t*0.06);
+    ctx.restore();
+  }
+
+  function render(t_now){
+    if(state!=='playing') return;
+
+    const camX = Math.max(0, Math.min(MAP_W-VIEW_W, player.vx-VIEW_W/2+0.5));
+    const camY = Math.max(0, Math.min(MAP_H-VIEW_H, player.vy-VIEW_H/2+0.5));
+    let camPxX = Math.round(camX*TILE), camPxY = Math.round(camY*TILE);
+
+    const shakeAge = t_now-shakeStart;
+    if(shakeAge<160){ const mag=3*(1-shakeAge/160); camPxX+=Math.round((Math.random()-0.5)*mag*2); camPxY+=Math.round((Math.random()-0.5)*mag*2); }
+
+    ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    const gx0=Math.floor(camPxX/TILE)-1, gx1=Math.ceil((camPxX+canvas.width)/TILE)+1;
+    const gy0=Math.floor(camPxY/TILE)-1, gy1=Math.ceil((camPxY+canvas.height)/TILE)+1;
+    for(let gy=gy0; gy<=gy1; gy++){
+      for(let gx=gx0; gx<=gx1; gx++){
+        if(gx<0||gy<0||gx>=MAP_W||gy>=MAP_H) continue;
+        const sx=gx*TILE-camPxX, sy=gy*TILE-camPxY;
+        if(gx===stairsPos.x && gy===stairsPos.y) drawStairs(sx,sy);
+        else if(map[gy][gx]===1) drawWall(sx,sy);
+        else drawFloor(sx,sy,gx,gy);
+      }
+    }
+
+    items.forEach(it=>{
+      const sx=it.x*TILE-camPxX, sy=it.y*TILE-camPxY;
+      if(it.type==='potion') drawPotionItem(sx,sy);
+      else if(it.type==='scroll') drawScrollItem(sx,sy);
+      else if(it.type==='weapon') drawWeaponItem(sx,sy);
+      else if(it.type==='armor') drawArmorItem(sx,sy);
+    });
+
+    monsters.forEach((m,i)=>{
+      if(!m.alive) return;
+      const [ox,oy]=animOffset(m);
+      const sx=(m.vx+ox)*TILE-camPxX, sy=(m.vy+oy)*TILE-camPxY;
+      if(m.type==='slime') drawSlime(sx,sy,t_now,i);
+      else if(m.type==='bat') drawBat(sx,sy,t_now,i);
+      else if(m.type==='skeleton') drawSkeleton(sx,sy);
+      else if(m.type==='goblin') drawGoblin(sx,sy,t_now,i);
+      else if(m.type==='ghost') drawGhost(sx,sy,t_now,i);
+      else if(m.type==='ogre') drawOgre(sx,sy,t_now,i);
+      else if(m.type==='boss') drawBoss(sx,sy,t_now);
+      drawFlash(sx,sy,m);
+      drawHpBar(sx+TILE/2, sy-6, m.hp, m.maxhp, TILE*(m.type==='boss'?1.3:0.8));
+    });
+
+    {
+      const [ox,oy]=animOffset(player);
+      const sx=(player.vx+ox)*TILE-camPxX, sy=(player.vy+oy)*TILE-camPxY;
+      drawPlayer(sx,sy,player.facing,isAnimating(),t_now);
+      drawFlash(sx,sy,player);
+    }
+
+    effects = effects.filter(fx=>{
+      if(fx.type==='bolt'){
+        const age=t_now-fx.start, dur=220;
+        if(age>dur) return false;
+        const p=Math.min(1,age/dur);
+        ctx.save(); ctx.globalAlpha=1-p*0.6; ctx.strokeStyle='#ffb060'; ctx.lineWidth=3;
+        ctx.beginPath();
+        ctx.moveTo(fx.x1*TILE-camPxX, fx.y1*TILE-camPxY);
+        ctx.lineTo(fx.x1*TILE-camPxX + (fx.x2-fx.x1)*TILE*p, fx.y1*TILE-camPxY + (fx.y2-fx.y1)*TILE*p);
+        ctx.stroke();
+        ctx.fillStyle='#ffd8a0';
+        ctx.beginPath(); ctx.arc(fx.x1*TILE-camPxX + (fx.x2-fx.x1)*TILE*p, fx.y1*TILE-camPxY + (fx.y2-fx.y1)*TILE*p, 4, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+        return true;
+      } else {
+        const age=t_now-fx.start;
+        if(age>700) return false;
+        const sx=fx.x*TILE-camPxX, sy=fx.y*TILE-camPxY-age*0.03;
+        ctx.save(); ctx.globalAlpha=Math.max(0,1-age/700);
+        ctx.font='bold 11px monospace'; ctx.textAlign='center';
+        ctx.fillStyle='#000'; ctx.fillText(fx.text,sx+1,sy+1);
+        ctx.fillStyle=fx.color; ctx.fillText(fx.text,sx,sy);
+        ctx.restore();
+        return true;
+      }
+    });
+
+    document.getElementById('hpText').textContent = player.hp+'/'+player.maxhp;
+    document.getElementById('hpBarFill').style.width = Math.max(0,(player.hp/player.maxhp*100))+'%';
+    document.getElementById('lvLabel').textContent = 'Lv'+player.level;
+    document.getElementById('xpText').textContent = 'XP '+player.xp+'/'+player.xpNext;
+  }
+
+  // ---------- MAIN LOOP ----------
+  let lastTs=null;
+  let heldDir=null;
+  function frame(ts){
+    if(state==='playing'){
+      if(lastTs===null) lastTs=ts;
+      const dt=Math.min(0.05,(ts-lastTs)/1000);
+      lastTs=ts; nowTs=ts;
+      updateVisuals(dt);
+      if(heldDir && !isAnimating()){ tryMove(heldDir.dx, heldDir.dy); }
+      render(ts);
+    } else { lastTs=null; }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // ---------- INPUT ----------
+  function bindBtn(id,fn){
+    document.getElementById(id).addEventListener('pointerdown',(e)=>{ e.preventDefault(); fn(); });
+  }
+  function setHeld(dx,dy){ heldDir={dx,dy}; tryMove(dx,dy); }
+  function clearHeld(dx,dy){ if(heldDir && heldDir.dx===dx && heldDir.dy===dy) heldDir=null; }
+  function bindDirBtn(id,dx,dy){
+    const el=document.getElementById(id);
+    el.addEventListener('pointerdown',(e)=>{ e.preventDefault(); setHeld(dx,dy); });
+    el.addEventListener('pointerup',(e)=>{ e.preventDefault(); clearHeld(dx,dy); });
+    el.addEventListener('pointercancel',()=>clearHeld(dx,dy));
+    el.addEventListener('pointerleave',()=>clearHeld(dx,dy));
+  }
+  bindDirBtn('dUp',0,-1);
+  bindDirBtn('dDown',0,1);
+  bindDirBtn('dLeft',-1,0);
+  bindDirBtn('dRight',1,0);
+  bindBtn('btnA',attackAction);
+  bindBtn('btnB',useSelectedItem);
+  document.getElementById('invRow').addEventListener('pointerdown',(e)=>{ e.preventDefault(); cycleItem(); });
+
+  const KEYMAP = { ArrowUp:[0,-1], w:[0,-1], ArrowDown:[0,1], s:[0,1], ArrowLeft:[-1,0], a:[-1,0], ArrowRight:[1,0], d:[1,0] };
+  window.addEventListener('keydown',(e)=>{
+    if(state!=='playing') return;
+    if(KEYMAP[e.key]){
+      if(!e.repeat){ const [dx,dy]=KEYMAP[e.key]; setHeld(dx,dy); }
+      return;
+    }
+    switch(e.key){
+      case 'z': case 'Z': case ' ': attackAction(); break;
+      case 'x': case 'X': useSelectedItem(); break;
+      case 'c': case 'C': cycleItem(); break;
+    }
+  });
+  window.addEventListener('keyup',(e)=>{
+    if(KEYMAP[e.key]){ const [dx,dy]=KEYMAP[e.key]; clearHeld(dx,dy); }
+  });
+
+  document.getElementById('startBtn').addEventListener('click', ()=>{ sfx.select(); startNewGame(); });
+  document.getElementById('retryBtn').addEventListener('click', ()=>{ sfx.select(); startNewGame(); });
+  document.getElementById('winRetryBtn').addEventListener('click', ()=>{ sfx.select(); startNewGame(); });
+
+  show('titleScreen');
+})();
+</script>
+</body>
+</html>
